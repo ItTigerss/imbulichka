@@ -1,2 +1,2 @@
 # imbulichka
-discord-bot p
+discord-bot php
