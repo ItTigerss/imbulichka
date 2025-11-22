@@ -1,4 +1,4 @@
 # imbulichka
 discord-bot php
 
-we 
+we created this discrod bot
