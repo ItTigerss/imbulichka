@@ -1,6 +1,4 @@
 # imbulichka
 discord-bot python
 
-we created this discrod bot together
-
-so
+we created this discord bot together
