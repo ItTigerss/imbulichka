@@ -1,5 +1,5 @@
 # imbulichka
-discord-bot php
+discord-bot python
 
 we created this discrod bot together
 
