@@ -1,4 +1,4 @@
 # imbulichka
-discord-bot python
+discord-bot c#
 
 we created this discord bot together
