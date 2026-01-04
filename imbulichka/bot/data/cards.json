@@ -1,0 +1,17 @@
+{
+    "cards": [
+        {"id": "001", "name": "Starshine Orb", "rarity": "common", "value": 10},
+        {"id": "002", "name": "Moonlight Crystal", "rarity": "rare", "value": 50},
+        {"id": "003", "name": "Galaxy Fragment", "rarity": "epic", "value": 200},
+        {"id": "004", "name": "Cosmic Singularity", "rarity": "legendary", "value": 1000},
+        {"id": "005", "name": "Solar Flare", "rarity": "common", "value": 15},
+        {"id": "006", "name": "Nebula Dust", "rarity": "common", "value": 12},
+        {"id": "007", "name": "Comet Tail", "rarity": "rare", "value": 60},
+        {"id": "008", "name": "Black Hole Core", "rarity": "epic", "value": 250},
+        {"id": "009", "name": "Supernova Remnant", "rarity": "legendary", "value": 1200},
+        {"id": "010", "name": "Star Dust", "rarity": "common", "value": 8},
+        {"id": "011", "name": "Planet Core", "rarity": "rare", "value": 75},
+        {"id": "012", "name": "Aurora Fragment", "rarity": "epic", "value": 300},
+        {"id": "013", "name": "Universe Seed", "rarity": "legendary", "value": 1500}
+    ]
+}
