@@ -1,86 +1,160 @@
 import discord
 from discord.ext import commands
-from config import Config
 import asyncio
-import logging
+import aiosqlite
 import os
 import sys
+from datetime import datetime
+from config import BOT_TOKEN, COLORS
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+if not BOT_TOKEN:
+    print("❌ BOT_TOKEN not found in .env file!")
+    sys.exit(1)
 
-logging.basicConfig(level=logging.INFO)
+print("=" * 50)
+print("🚀 Starting Starlight Nexus Bot...")
+print("=" * 50)
 
-class ShinelandBot(commands.Bot):
+class StarlightBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.all()
-        super().__init__(command_prefix=Config.PREFIX, intents=intents, help_command=None)
+        intents.message_content = True
         
+        super().__init__(
+            command_prefix="!",
+            intents=intents,
+            help_command=None,
+            case_insensitive=True
+        )
+        
+        self.db = None
+        self.color = COLORS["PRIMARY"]
+        self.start_time = datetime.now()
+    
     async def setup_hook(self):
-        # Загружаем события
-        events = [
-            'bot.events.on_ready',
-            'bot.events.on_message',
-            'bot.events.on_voice_state',
-            'bot.events.on_member_join'
-        ]
+        # Initialize database
+        os.makedirs("database", exist_ok=True)
+        self.db = await aiosqlite.connect("database/starlight.db")
+        await self.init_database()
         
-        for event in events:
-            try:
-                await self.load_extension(event)
-                logging.info(f'Loaded event: {event}')
-            except Exception as e:
-                logging.error(f'Failed to load event {event}: {e}')
-        
-        # Загружаем коги
+        # Load cogs
         cogs = [
-            'bot.cogs.moderation',
-            'bot.cogs.leveling',
-            'bot.cogs.games',
-            'bot.cogs.cards',
-            'bot.cogs.utility',
-            'bot.cogs.fun',
-            'bot.cogs.ai_chat',
-            'bot.cogs.music',
-            'bot.cogs.economy'
+            "cogs.menu",
+            "cogs.leveling",
+            "cogs.economy",
+            "cogs.games",
+            "cogs.moderation",
+            "cogs.utilities",
+            "cogs.ai_commands",
         ]
         
         for cog in cogs:
             try:
                 await self.load_extension(cog)
-                logging.info(f'Loaded cog: {cog}')
+                print(f"✅ Loaded: {cog}")
             except Exception as e:
-                logging.error(f'Failed to load cog {cog}: {e}')
+                print(f"❌ Failed to load {cog}: {e}")
+        
+        print(f"✅ Bot ready with {len(self.commands)} commands")
+    
+    async def init_database(self):
+        async with self.db.cursor() as cursor:
+            # Users table
+            await cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id INTEGER,
+                    guild_id INTEGER,
+                    xp INTEGER DEFAULT 0,
+                    level INTEGER DEFAULT 1,
+                    messages INTEGER DEFAULT 0,
+                    voice_time INTEGER DEFAULT 0,
+                    total_xp INTEGER DEFAULT 0,
+                    coins INTEGER DEFAULT 500,
+                    daily_streak INTEGER DEFAULT 0,
+                    last_daily TEXT,
+                    last_message TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, guild_id)
+                )
+            """)
+            
+            # Cards table
+            await cursor.execute("""
+                CREATE TABLE IF NOT EXISTS cards (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    guild_id INTEGER,
+                    card_id TEXT,
+                    card_name TEXT,
+                    rarity TEXT,
+                    value INTEGER,
+                    obtained_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id, guild_id) REFERENCES users(user_id, guild_id)
+                )
+            """)
+            
+            # Warnings table
+            await cursor.execute("""
+                CREATE TABLE IF NOT EXISTS warnings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    guild_id INTEGER,
+                    moderator_id INTEGER,
+                    reason TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            await self.db.commit()
+    
+    async def on_ready(self):
+        print("=" * 50)
+        print(f"🤖 Logged in as: {self.user}")
+        print(f"🆔 Bot ID: {self.user.id}")
+        print(f"🌐 Servers: {len(self.guilds)}")
+        print(f"⚡ Commands: {len(self.commands)}")
+        print("=" * 50)
+        
+        await self.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.watching,
+                name="✨ Starlight Nexus | !help"
+            )
+        )
+    
+    async def close(self):
+        if self.db:
+            await self.db.close()
+        await super().close()
 
-bot = ShinelandBot()
+# Create and run bot
+bot = StarlightBot()
 
-@bot.command()
+# Basic ping command
+@bot.command(name="ping")
 async def ping(ctx):
     """Check bot latency"""
     latency = round(bot.latency * 1000)
-    await ctx.send(f'🏓 Pong! Latency: {latency}ms')
-
-@bot.command()
-@commands.is_owner()
-async def load(ctx, cog: str):
-    try:
-        await bot.load_extension(f'bot.cogs.{cog}')
-        await ctx.send(f'✅ Cog {cog} loaded!')
-    except Exception as e:
-        await ctx.send(f'❌ Error: {e}')
-
-@bot.command()
-@commands.is_owner()
-async def reload(ctx, cog: str):
-    try:
-        await bot.reload_extension(f'bot.cogs.{cog}')
-        await ctx.send(f'✅ Cog {cog} reloaded!')
-    except Exception as e:
-        await ctx.send(f'❌ Error: {e}')
+    
+    embed = discord.Embed(
+        title="🏓 Pong!",
+        description=f"**Latency:** {latency}ms",
+        color=COLORS["SUCCESS"]
+    )
+    
+    if latency < 100:
+        embed.set_footer(text="⚡ Excellent connection!")
+    elif latency < 200:
+        embed.set_footer(text="✅ Good connection")
+    else:
+        embed.set_footer(text="⚠️ High latency detected")
+    
+    await ctx.send(embed=embed)
 
 if __name__ == "__main__":
-    if not Config.TOKEN or Config.TOKEN == "ваш_токен_бота_здесь":
-        print("❌ ERROR: Set DISCORD_TOKEN in .env file!")
-        print("❌ Create .env file with: DISCORD_TOKEN=your_token_here")
-        exit(1)
-    
-    bot.run(Config.TOKEN)
+    try:
+        bot.run(BOT_TOKEN)
+    except KeyboardInterrupt:
+        print("\n👋 Shutting down bot...")
+    except Exception as e:
+        print(f"❌ Error: {e}")
